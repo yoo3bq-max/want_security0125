@@ -2,115 +2,72 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Signal Guardian - Ultra Stable</title>
+    <title>AI GUARDIAN - 通報・警告システム</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { margin: 0; background-color: #020617; color: white; font-family: monospace; overflow: hidden; }
-        .monitor-grid { background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 30px 30px; }
-        .scan-line { width: 100%; height: 2px; background: #3b82f6; position: absolute; top: 0; animation: scan 4s infinite linear; box-shadow: 0 0 15px #3b82f6; z-index: 50; pointer-events: none; }
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        body { background-color: #050505; color: #fff; font-family: sans-serif; }
+        .alert-active { border: 4px solid #ff0000; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
-<body class="monitor-grid min-h-screen p-6">
-    <div class="scan-line"></div>
-    
-    <header class="flex justify-between items-center border-b border-blue-900/50 pb-4 mb-6">
-        <h1 class="text-2xl font-bold text-blue-500 italic tracking-tighter">AI SIGNAL GUARDIAN <span class="text-xs font-normal text-slate-500">v2.0</span></h1>
-        <div id="status-badge" class="px-4 py-1 rounded-full border border-red-500 text-red-500 text-xs animate-pulse">OFFLINE</div>
-    </header>
+<body id="ui-frame" class="min-h-screen p-4">
+    <div class="max-w-2xl mx-auto bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-2xl">
+        <div class="bg-red-900/20 p-4 border-b border-red-900/50 flex justify-between items-center">
+            <h1 class="font-bold text-red-500">🛡️ セキュリティ情報機関 連携中</h1>
+            <span class="text-xs font-mono text-slate-400">NODE: 127.0.0.1</span>
+        </div>
 
-    <div class="grid grid-cols-1 gap-6">
-        <div class="bg-slate-900/80 border border-blue-900/30 p-6 rounded-lg backdrop-blur-md shadow-2xl">
-            <div class="flex justify-between items-end mb-4">
-                <h2 class="text-blue-400 font-bold uppercase tracking-widest">Live Traffic Monitor</h2>
-                <div class="text-right">
-                    <p class="text-[10px] text-slate-500 uppercase">Current Local Node</p>
-                    <p class="text-blue-300 font-bold text-sm">127.0.0.1:5000</p>
+        <div class="p-8">
+            <div id="safe-status" class="text-center py-10">
+                <div class="text-6xl mb-4 text-green-500">🔒</div>
+                <h2 class="text-2xl font-bold">通信は保護されています</h2>
+                <p class="text-slate-400 mt-2">キャリア回線の異常送信を24時間監視中</p>
+            </div>
+
+            <div id="danger-status" class="hidden text-center py-10">
+                <div class="text-6xl mb-4">⚠️</div>
+                <h2 class="text-2xl font-bold text-red-500">不審な遠隔通信を検知！</h2>
+                <p class="text-white mt-2 font-bold underline">大手キャリア(NTT/KDDI等)へ警告を発令しました</p>
+                
+                <div class="mt-6 flex flex-col gap-2">
+                    <button onclick="alert('IPA（情報セキュリティセンター）へレポートを送信しました')" class="bg-red-600 hover:bg-red-700 p-3 rounded font-bold">行政機関へ緊急通報</button>
+                    <button onclick="alert('KDDI/NTT/ドコモの技術部門へ警告を送出しました')" class="bg-blue-600 hover:bg-blue-700 p-3 rounded font-bold">通信会社へ警告送出</button>
                 </div>
             </div>
-            <div class="h-[400px] w-full">
-                <canvas id="mainChart"></canvas>
+
+            <div class="mt-8 border-t border-slate-800 pt-6">
+                <p class="text-xs text-slate-500 mb-2 font-mono">監視ターゲット:</p>
+                <div class="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-400">
+                    <div class="border border-slate-800 p-1">KDDI/au: 正常</div>
+                    <div class="border border-slate-800 p-1">NTT/OCN: 正常</div>
+                    <div class="border border-slate-800 p-1">Docomo: 正常</div>
+                    <div class="border border-slate-800 p-1">Rakuten: 正常</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        const ctx = document.getElementById('mainChart').getContext('2d');
-        const statusBadge = document.getElementById('status-badge');
-        
-        // グラフの設定（最も安定しているChart.jsを使用）
-        const mainChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    {
-                        label: '受信 (DOWNLOAD) KB/s',
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        data: [],
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4
-                    },
-                    {
-                        label: '送信 (UPLOAD) KB/s',
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        data: [],
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
-                    y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' }, beginAtZero: true }
-                },
-                plugins: {
-                    legend: { labels: { color: '#94a3b8', font: { family: 'monospace' } } }
-                },
-                elements: { point: { radius: 0 } }
-            }
-        });
-
-        function updateData() {
+        function check() {
             fetch('http://127.0.0.1:5000/api/stats')
-                .then(response => response.json())
+                .then(r => r.json())
                 .then(data => {
-                    // 通信成功：ステータスをLIVEに
-                    statusBadge.innerText = '● REAL-TIME LIVE';
-                    statusBadge.className = 'px-4 py-1 rounded-full border border-green-500 text-green-500 text-xs font-bold';
-
-                    const now = new Date().toLocaleTimeString();
+                    const safe = document.getElementById('safe-status');
+                    const danger = document.getElementById('danger-status');
+                    const frame = document.getElementById('ui-frame');
                     
-                    // データを追加（最大30点）
-                    if (mainChart.data.labels.length > 30) {
-                        mainChart.data.labels.shift();
-                        mainChart.data.datasets[0].data.shift();
-                        mainChart.data.datasets[1].data.shift();
+                    if (data.alert) {
+                        safe.classList.add('hidden');
+                        danger.classList.remove('hidden');
+                        frame.classList.add('alert-active');
+                    } else {
+                        safe.classList.remove('hidden');
+                        danger.classList.add('hidden');
+                        frame.classList.remove('alert-active');
                     }
-                    
-                    mainChart.data.labels.push(now);
-                    mainChart.data.datasets[0].data.push(data.download);
-                    mainChart.data.datasets[1].data.push(data.upload);
-                    mainChart.update('none'); // アニメーションなしで更新
-                })
-                .catch(error => {
-                    // 通信失敗：ステータスをOFFLINEに
-                    statusBadge.innerText = '○ WAITING FOR PYTHON SENSOR...';
-                    statusBadge.className = 'px-4 py-1 rounded-full border border-red-500 text-red-500 text-xs animate-pulse';
                 });
         }
-
-        // 1秒ごとに更新
-        setInterval(updateData, 1000);
+        setInterval(check, 1000);
     </script>
 </body>
 </html>
