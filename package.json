@@ -1,0 +1,15 @@
+{
+  "name": "security_00",
+  "private": true,
+  "version": "1.0.0",
+  "homepage": "https://yoo3bq-max.github.io/security_00/",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "lucide-react": "^0.263.1",
+    "recharts": "^2.7.2"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.1.1"
+  }
+}
