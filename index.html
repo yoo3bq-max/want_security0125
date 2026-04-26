@@ -1,92 +1,116 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Signal Guardian - Final</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Signal Guardian - Ultra Stable</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-      body { margin: 0; background-color: #020617; color: white; font-family: sans-serif; }
-      .loading-screen { display: flex; justify-content: center; align-items: center; min-height: 100vh; color: #3b82f6; font-family: monospace; }
-      .scan-line { width: 100%; height: 2px; background: #3b82f6; position: absolute; top: 0; animation: scan 3s infinite linear; pointer-events: none; }
-      @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        body { margin: 0; background-color: #020617; color: white; font-family: monospace; overflow: hidden; }
+        .monitor-grid { background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 30px 30px; }
+        .scan-line { width: 100%; height: 2px; background: #3b82f6; position: absolute; top: 0; animation: scan 4s infinite linear; box-shadow: 0 0 15px #3b82f6; z-index: 50; pointer-events: none; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
     </style>
-  </head>
-  <body>
-    <div id="root"><div class="loading-screen text-xl animate-pulse">SYSTEM INITIALIZING...</div></div>
+</head>
+<body class="monitor-grid min-h-screen p-6">
+    <div class="scan-line"></div>
+    
+    <header class="flex justify-between items-center border-b border-blue-900/50 pb-4 mb-6">
+        <h1 class="text-2xl font-bold text-blue-500 italic tracking-tighter">AI SIGNAL GUARDIAN <span class="text-xs font-normal text-slate-500">v2.0</span></h1>
+        <div id="status-badge" class="px-4 py-1 rounded-full border border-red-500 text-red-500 text-xs animate-pulse">OFFLINE</div>
+    </header>
 
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <script type="text/babel">
-      const { useState, useEffect } = React;
-
-      const App = () => {
-        const [data, setData] = useState([]);
-        const [isLive, setIsLive] = useState(false);
-        const [error, setError] = useState(null);
-
-        useEffect(() => {
-          if (window.lucide) window.lucide.createIcons();
-          
-          const interval = setInterval(() => {
-            fetch('http://127.0.0.1:5000/api/stats')
-              .then(res => res.json())
-              .then(stats => {
-                setIsLive(true);
-                setData(prev => [...prev, { time: new Date().toLocaleTimeString(), ...stats }].slice(-20));
-              })
-              .catch(err => {
-                setIsLive(false);
-                console.log("Waiting for monitor.py...");
-              });
-          }, 1000);
-          return () => clearInterval(interval);
-        }, []);
-
-        // 部品が読み込まれるまで待機
-        if (!window.Recharts) return <div className="loading-screen">Loading Components...</div>;
-
-        const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = window.Recharts;
-
-        return (
-          <div className="min-h-screen p-4 md:p-8 relative">
-            <div className="scan-line"></div>
-            <header className="flex justify-between items-center mb-8 border-b border-slate-800 pb-6">
-              <h1 className="text-2xl font-bold text-blue-500 flex items-center gap-2 italic">
-                <i data-lucide="shield"></i> AI Signal Guardian
-              </h1>
-              <div className={`text-xs font-mono px-3 py-1 rounded-full border ${isLive ? 'border-green-500 text-green-500' : 'border-red-500 text-red-500'}`}>
-                {isLive ? '● LIVE' : '○ OFFLINE'}
-              </div>
-            </header>
-
-            <div className="bg-slate-900 rounded-xl p-6 border border-slate-800 shadow-2xl">
-              <h2 className="text-lg font-semibold mb-6 text-blue-400 flex items-center gap-2">
-                <i data-lucide="activity"></i> REAL-TIME MONITOR
-              </h2>
-              <div style={{ width: '100%', height: 350 }}>
-                <ResponsiveContainer>
-                  <AreaChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                    <XAxis dataKey="time" stroke="#64748b" fontSize={10} />
-                    <YAxis stroke="#64748b" />
-                    <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155' }} />
-                    <Area type="monotone" dataKey="upload" stroke="#ef4444" fill="#ef4444" fillOpacity={0.1} name="UP" isAnimationActive={false} />
-                    <Area type="monotone" dataKey="download" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.1} name="DOWN" isAnimationActive={false} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+    <div class="grid grid-cols-1 gap-6">
+        <div class="bg-slate-900/80 border border-blue-900/30 p-6 rounded-lg backdrop-blur-md shadow-2xl">
+            <div class="flex justify-between items-end mb-4">
+                <h2 class="text-blue-400 font-bold uppercase tracking-widest">Live Traffic Monitor</h2>
+                <div class="text-right">
+                    <p class="text-[10px] text-slate-500 uppercase">Current Local Node</p>
+                    <p class="text-blue-300 font-bold text-sm">127.0.0.1:5000</p>
+                </div>
             </div>
-          </div>
-        );
-      };
+            <div class="h-[400px] w-full">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+    </div>
 
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      root.render(<App />);
+    <script>
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        const statusBadge = document.getElementById('status-badge');
+        
+        // グラフの設定（最も安定しているChart.jsを使用）
+        const mainChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: '受信 (DOWNLOAD) KB/s',
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        data: [],
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: '送信 (UPLOAD) KB/s',
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        data: [],
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' } },
+                    y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b' }, beginAtZero: true }
+                },
+                plugins: {
+                    legend: { labels: { color: '#94a3b8', font: { family: 'monospace' } } }
+                },
+                elements: { point: { radius: 0 } }
+            }
+        });
+
+        function updateData() {
+            fetch('http://127.0.0.1:5000/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    // 通信成功：ステータスをLIVEに
+                    statusBadge.innerText = '● REAL-TIME LIVE';
+                    statusBadge.className = 'px-4 py-1 rounded-full border border-green-500 text-green-500 text-xs font-bold';
+
+                    const now = new Date().toLocaleTimeString();
+                    
+                    // データを追加（最大30点）
+                    if (mainChart.data.labels.length > 30) {
+                        mainChart.data.labels.shift();
+                        mainChart.data.datasets[0].data.shift();
+                        mainChart.data.datasets[1].data.shift();
+                    }
+                    
+                    mainChart.data.labels.push(now);
+                    mainChart.data.datasets[0].data.push(data.download);
+                    mainChart.data.datasets[1].data.push(data.upload);
+                    mainChart.update('none'); // アニメーションなしで更新
+                })
+                .catch(error => {
+                    // 通信失敗：ステータスをOFFLINEに
+                    statusBadge.innerText = '○ WAITING FOR PYTHON SENSOR...';
+                    statusBadge.className = 'px-4 py-1 rounded-full border border-red-500 text-red-500 text-xs animate-pulse';
+                });
+        }
+
+        // 1秒ごとに更新
+        setInterval(updateData, 1000);
     </script>
-  </body>
+</body>
 </html>
