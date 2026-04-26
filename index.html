@@ -2,72 +2,83 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>AI GUARDIAN - 通報・警告システム</title>
+    <title>AI GUARDIAN - DEVICE IDENTIFIER</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #050505; color: #fff; font-family: sans-serif; }
+        body { background-color: #050505; color: #fff; font-family: monospace; }
         .alert-active { border: 4px solid #ff0000; animation: blink 1s infinite; }
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .device-box { background: rgba(30, 41, 59, 0.5); border: 1px solid #1e293b; padding: 10px; border-radius: 5px; }
     </style>
 </head>
 <body id="ui-frame" class="min-h-screen p-4">
-    <div class="max-w-2xl mx-auto bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-2xl">
-        <div class="bg-red-900/20 p-4 border-b border-red-900/50 flex justify-between items-center">
-            <h1 class="font-bold text-red-500">🛡️ セキュリティ情報機関 連携中</h1>
-            <span class="text-xs font-mono text-slate-400">NODE: 127.0.0.1</span>
+    <div class="max-w-3xl mx-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
+        <div class="bg-blue-900/20 p-4 border-b border-blue-900/50 flex justify-between">
+            <h1 class="font-bold text-blue-400">🛡️ 相手デバイス特定システム</h1>
+            <span id="node-status" class="text-xs text-green-500">SYSTEM LIVE</span>
         </div>
 
-        <div class="p-8">
-            <div id="safe-status" class="text-center py-10">
-                <div class="text-6xl mb-4 text-green-500">🔒</div>
-                <h2 class="text-2xl font-bold">通信は保護されています</h2>
-                <p class="text-slate-400 mt-2">キャリア回線の異常送信を24時間監視中</p>
-            </div>
-
-            <div id="danger-status" class="hidden text-center py-10">
-                <div class="text-6xl mb-4">⚠️</div>
-                <h2 class="text-2xl font-bold text-red-500">不審な遠隔通信を検知！</h2>
-                <p class="text-white mt-2 font-bold underline">大手キャリア(NTT/KDDI等)へ警告を発令しました</p>
-                
-                <div class="mt-6 flex flex-col gap-2">
-                    <button onclick="alert('IPA（情報セキュリティセンター）へレポートを送信しました')" class="bg-red-600 hover:bg-red-700 p-3 rounded font-bold">行政機関へ緊急通報</button>
-                    <button onclick="alert('KDDI/NTT/ドコモの技術部門へ警告を送出しました')" class="bg-blue-600 hover:bg-blue-700 p-3 rounded font-bold">通信会社へ警告送出</button>
+        <div class="p-6">
+            <div class="mb-6">
+                <h2 class="text-xs text-slate-500 uppercase mb-2">Current Access Node (覗き見の正体):</h2>
+                <div id="remote-device-info" class="device-box text-sm text-yellow-500 break-all">
+                    相手をスキャン中...
                 </div>
             </div>
 
-            <div class="mt-8 border-t border-slate-800 pt-6">
-                <p class="text-xs text-slate-500 mb-2 font-mono">監視ターゲット:</p>
-                <div class="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-400">
-                    <div class="border border-slate-800 p-1">KDDI/au: 正常</div>
-                    <div class="border border-slate-800 p-1">NTT/OCN: 正常</div>
-                    <div class="border border-slate-800 p-1">Docomo: 正常</div>
-                    <div class="border border-slate-800 p-1">Rakuten: 正常</div>
-                </div>
+            <div id="status-display" class="text-center py-6">
+                <div id="status-icon" class="text-5xl mb-2">🔒</div>
+                <div id="status-text" class="text-xl font-bold">監視中</div>
+                <p id="speed-text" class="text-slate-400 text-sm mt-2">Upload: 0.00 KB/s</p>
+            </div>
+
+            <div id="danger-box" class="hidden bg-red-600 p-4 rounded mb-6 text-center animate-pulse">
+                <p class="font-bold">⚠️ 異常なステルス通信を検知！</p>
+                <p class="text-xs">相手のデバイス情報を証拠レポート(v2)に記録しました。</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-[10px] mt-4 opacity-50 font-mono">
+                <div class="border border-slate-800 p-1">NTT/OCN: SCANNING</div>
+                <div class="border border-slate-800 p-1">KDDI/au: SCANNING</div>
+                <div class="border border-slate-800 p-1">Docomo: SCANNING</div>
+                <div class="border border-slate-800 p-1">Rakuten: SCANNING</div>
             </div>
         </div>
     </div>
 
     <script>
-        function check() {
+        function update() {
             fetch('http://127.0.0.1:5000/api/stats')
                 .then(r => r.json())
                 .then(data => {
-                    const safe = document.getElementById('safe-status');
-                    const danger = document.getElementById('danger-status');
-                    const frame = document.getElementById('ui-frame');
+                    // 送信速度と相手のデバイス情報を更新
+                    document.getElementById('speed-text').innerText = "Upload: " + data.upload + " KB/s";
+                    document.getElementById('remote-device-info').innerText = data.remote_device;
                     
+                    const frame = document.getElementById('ui-frame');
+                    const danger = document.getElementById('danger-box');
+                    const icon = document.getElementById('status-icon');
+
                     if (data.alert) {
-                        safe.classList.add('hidden');
-                        danger.classList.remove('hidden');
                         frame.classList.add('alert-active');
+                        danger.classList.remove('hidden');
+                        icon.innerText = "🚨";
+                        document.getElementById('status-text').innerText = "ステルス攻撃検知";
+                        document.getElementById('status-text').className = "text-xl font-bold text-red-500";
                     } else {
-                        safe.classList.remove('hidden');
-                        danger.classList.add('hidden');
                         frame.classList.remove('alert-active');
+                        danger.classList.add('hidden');
+                        icon.innerText = "🔒";
+                        document.getElementById('status-text').innerText = "監視中";
+                        document.getElementById('status-text').className = "text-xl font-bold text-green-500";
                     }
+                })
+                .catch(() => {
+                    document.getElementById('node-status').innerText = "Pythonセンサー未起動";
+                    document.getElementById('node-status').className = "text-xs text-red-500";
                 });
         }
-        setInterval(check, 1000);
+        setInterval(update, 1000);
     </script>
 </body>
 </html>
